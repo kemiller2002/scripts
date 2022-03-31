@@ -35,7 +35,11 @@ function processAttributes(c, v, ci, array) {
 
   const getNextCharacter = (position) => (array.length >= position + 1 ? array[position] : null);
 
-  if ((c.valueStart && ci < c.valueStart) || c.complete || (!c.separator && v === " ")) {
+  if (c.endLocation == ci || array.length <= ci + 1) {
+    return createObject({ complete: true });
+  }
+
+  if ((c.valueStart && ci < c.valueStart) || c.complete || (!c.separator && v === " ") || c.endLocation > ci) {
     return c;
   }
 
@@ -46,13 +50,13 @@ function processAttributes(c, v, ci, array) {
 
   if (isSeparator(v)) {
     const elementSeparator = c.separator || "";
-
     if (elementSeparator.length === 1 && elementSeparator === v) {
       return createObject({ complete: true });
     } else if (elementSeparator.length > 1) {
       const chord = v + getNextCharacter(ci + 1);
+
       if (elementSeparator === chord) {
-        return createObject({ complete: true });
+        return createObject({ endLocation: ci + chord.length });
       }
     }
   }
@@ -67,9 +71,6 @@ function processAttributes(c, v, ci, array) {
 function processList(c, v, ci, array) {
   const createObject = (upd) => Object.assign({}, c, upd);
   const attributeEntry = processAttributes(c.current, v, ci, array);
-  if (!attributeEntry) {
-    console.log(c, v);
-  }
 
   if (attributeEntry.complete) {
     return createObject({ current: { name: null, separator: null }, attributes: [...c.attributes, attributeEntry] });
@@ -93,7 +94,7 @@ function processElement(updateAttributeList, totalElement) {
   const style = attributes.find((x) => x.name.toLowerCase() === "style");
 
   if (!style || !style.value) {
-    console.log(attributes); //
+    console.log("style missing--", attributesWrapper); //
   } else {
     const styleValues = style.value
       .split(";")
@@ -122,6 +123,7 @@ function processElement(updateAttributeList, totalElement) {
 }
 
 function processTag(updateAttributeList, match) {
+  //
   return processElement(updateAttributeList, match);
 }
 
