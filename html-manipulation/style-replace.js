@@ -1,5 +1,6 @@
 const { create } = require("domain");
 const fs = require("fs");
+const path = require("path");
 const { isNullOrUndefined } = require("util");
 
 newAttributeList = [];
@@ -123,14 +124,40 @@ function processElement(updateAttributeList, totalElement) {
 }
 
 function processTag(updateAttributeList, match) {
-  //
   return processElement(updateAttributeList, match);
 }
 
 function processFile(updateAttributeList, path) {
   const contents = fs.readFileSync(path, { encoding: "utf8", flag: "r" });
 
-  newContents = contents.replace(/<.*style=["'\\\/]+.*\>/gim, (m) => processTag(updateAttributeList, m));
+  newContents = contents.replace(/<.*style=["'\\\/]+.*\>/gm, (m) => processTag(updateAttributeList, m));
 }
 
-processFile(updateAttributeList, "/temp/update-script/test/_DynamicForm.cshtml");
+function* walkSync(dir) {
+  const files = fs.readdirSync(dir, { withFileTypes: true });
+
+  for (const file of files) {
+    if (file.isDirectory()) {
+      yield* walkSync(path.join(dir, file.name));
+    } else {
+      if (file.name.indexOf) yield path.join(dir, file.name);
+    }
+  }
+}
+
+function findAndReplace(path) {
+  const files = Array.from(walkSync(path));
+
+  files.forEach((f) => {
+    console.log(f);
+    processFile(updateAttributeList, f);
+  });
+
+  console.log(newAttributeList);
+}
+
+findAndReplace("/builds/dfx/RenaissanceWeb");
+
+//processFile(updateAttributeList, process.argv[0]);
+
+//processFile(updateAttributeList, "/temp/update-script/test/_DynamicForm.cshtml");
